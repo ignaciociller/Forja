@@ -1,5 +1,6 @@
-/* FORJA — service worker: instalación y uso sin conexión */
-const CACHE = 'forja-v4';
+/* FORJA — service worker: instalación y uso sin conexión.
+   Solo toca sus propias cachés (forja-*): otras apps del mismo github.io (p. ej. Bonsai) quedan intactas. */
+const CACHE = 'forja-v6';
 const SHELL = ['./', 'index.html', 'css/styles.css', 'js/data.js', 'js/app.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-192.png', 'icons/maskable-512.png', 'icons/icon.svg', 'icons/screen-1.png', 'icons/screen-2.png', 'icons/screen-3.png'];
 
 self.addEventListener('install', (e) => {
@@ -7,7 +8,7 @@ self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => Promise.allSettled(SHELL.map((u) => c.add(u)))).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', (e) => {
-  e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith('forja-') && k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
 });
 // Red primero (para recibir actualizaciones); caché si no hay conexión
 self.addEventListener('fetch', (e) => {

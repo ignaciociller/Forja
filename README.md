@@ -35,6 +35,14 @@ Si no te deja instalarla, en **Ajustes → App → Cómo** la propia app comprue
 - **Navegador Chrome:** si abriste el enlace desde WhatsApp, Instagram o la app de GitHub, estás en su navegador interno. Toca ⋮ → *Abrir en Chrome*.
 - **Manifiesto y service worker:** `manifest.webmanifest` y `sw.js` tienen que estar en la misma carpeta que `index.html`.
 
+**Si Chrome dice "esta aplicación ya está instalada" pero al abrirla da error,** es que queda una instalación antigua rota:
+1. Mantén pulsado el icono → *Desinstalar*. Si no aparece, ve a Ajustes de Android → Aplicaciones → Forja.
+2. Cierra Chrome, vuelve a abrir la web y elige ⋮ → *Instalar app*.
+
+**Ojo si tienes otras apps en el mismo `tuusuario.github.io` (por ejemplo Bonsai):** todas comparten el mismo sitio para Chrome. No uses *Borrar y restablecer* en github.io, porque borrarías también sus datos. Además, si otra app está en la raíz (`tuusuario.github.io`) o su manifiesto tiene `"scope": "/"`, Chrome cree que Forja forma parte de ella. Para que convivan, el `scope` y el `start_url` de esa app tienen que limitarse a su propia carpeta (por ejemplo `/bonsai/`).
+
+No cambies `start_url`, `scope` ni el nombre del repositorio una vez instalada: Chrome identifica la app por esa dirección.
+
 ## Estructura
 
 ```
@@ -56,4 +64,4 @@ Todo se guarda en el `localStorage` del navegador, solo en ese dispositivo. Si b
 
 ## Actualizar la app
 
-Cuando cambies archivos, sube la versión en `sw.js` (por ejemplo, de `forja-v4` a `const CACHE = 'forja-v5'`) para que los móviles que ya la tienen instalada descarguen la versión nueva.
+Cuando cambies archivos, sube la versión en `sw.js` (por ejemplo, de `forja-v6` a `const CACHE = 'forja-v7'`) para que los móviles que ya la tienen instalada descarguen la versión nueva.

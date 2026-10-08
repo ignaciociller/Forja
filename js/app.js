@@ -945,6 +945,13 @@ function openInstallHelp() {
       </ol>
       <div class="section-title">Comprobación</div>
       ${installChecks()}
+      <div class="section-title">¿Dice "ya instalada" o "error al abrir"?</div>
+      <p class="muted" style="margin:0 0 6px">Queda una instalación antigua rota. Para quitarla:</p>
+      <ol class="muted" style="margin:0;padding-left:20px;line-height:1.7">
+        <li>Mantén pulsado el icono de FORJA en el móvil → <b style="color:var(--text)">Desinstalar</b>. Si no aparece, ve a Ajustes de Android → Aplicaciones → Forja → Desinstalar.</li>
+        <li>No borres los datos del sitio github.io en Chrome: los comparte con tus otras apps de GitHub Pages (por ejemplo Bonsai).</li>
+        <li>Cierra Chrome del todo, vuelve a abrir la web, espera unos segundos y pulsa <b style="color:var(--text)">⋮ → Instalar app</b>.</li>
+      </ol>
       <p class="note">Si todo sale en verde y Chrome solo ofrece "Crear acceso directo", recarga la página una vez y espera unos segundos: Chrome activa la instalación tras la primera visita.</p>`);
   });
 }
