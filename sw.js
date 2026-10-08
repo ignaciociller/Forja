@@ -1,5 +1,5 @@
 /* FORJA — service worker: funciona sin conexión */
-const CACHE = 'forja-v2';
+const CACHE = 'forja-v3';
 const SHELL = ['./', 'index.html', 'css/styles.css', 'js/data.js', 'js/app.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {

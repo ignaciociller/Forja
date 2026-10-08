@@ -258,7 +258,7 @@ function viewLog() {
   const done = D.ex.reduce((a, e) => a + Math.min(e.sets.length, e.target || e.sets.length), 0);
   const pct = totalTarget ? done / totalTarget : 0;
   const C = 2 * Math.PI * 22;
-  const ring = `<svg class="progress-ring" viewBox="0 0 54 54"><circle cx="27" cy="27" r="22" fill="none" stroke="#2a2e33" stroke-width="5"/><circle cx="27" cy="27" r="22" fill="none" stroke="#ff5722" stroke-width="5" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - pct)}" transform="rotate(-90 27 27)"/><text x="27" y="32" text-anchor="middle">${Math.round(pct * 100)}%</text></svg>`;
+  const ring = `<svg class="progress-ring" viewBox="0 0 54 54"><circle cx="27" cy="27" r="22" fill="none" stroke="#2a2e33" stroke-width="3"/><circle cx="27" cy="27" r="22" fill="none" stroke="#ff5722" stroke-width="3" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - pct)}" transform="rotate(-90 27 27)"/><text x="27" y="32" text-anchor="middle">${Math.round(pct * 100)}%</text></svg>`;
   return `
     <div class="session-head">
       <div><span class="day-badge">${D.editing ? 'Edición' : 'En curso'}</span>${D.challenge ? ` <span class="day-badge reto">${ui('flame', 'inl')} Reto</span>` : ''}<h2 style="margin-top:8px">${esc(day ? day.name : 'Libre')}</h2>
@@ -320,7 +320,7 @@ function exCardHTML(e, i) {
   return `<div class="ex-card ${open ? 'open' : ''} ${full ? 'done' : ''}" id="exc-${i}">
     <button class="ex-top" data-act="toggleEx" data-i="${i}">
       <div class="ex-ico">${exIcon(ex.icon)}</div>
-      <div class="grow"><div class="t">${esc(ex.name)}</div><div class="s">${e.ch ? `<span class="accent" style="font-weight:600">${ui('flame', 'inl')} ${e.ch.bw ? `${e.ch.r}+ reps` : `${fmtKg(e.ch.w)} kg × ${e.ch.r}+`}</span>` : e.target ? `${e.target} × ${e.targetReps}` : 'Extra'} · ${esc(ex.muscle)}</div></div>
+      <div class="grow"><div class="t">${esc(ex.name)}</div><div class="s">${e.ch ? `<span class="accent" style="font-weight:500">${ui('flame', 'inl')} ${e.ch.bw ? `${e.ch.r}+ reps` : `${fmtKg(e.ch.w)} kg × ${e.ch.r}+`}</span>` : e.target ? `${e.target} × ${e.targetReps}` : 'Extra'} · ${esc(ex.muscle)}</div></div>
       <span class="set-count ${full ? 'full' : ''}">${e.sets.length}${e.target ? '/' + e.target : ''}</span>
       ${ui('chev', 'chev')}
     </button>${body}</div>`;
@@ -399,7 +399,7 @@ function viewRoutines() {
   const rows = d.ex.map((r, i) => {
     const ex = exById(r.exId);
     return `<div class="row"><div class="ex-ico">${exIcon(ex.icon)}</div>
-      <button class="grow" style="text-align:left" data-act="editTarget" data-i="${i}"><div class="t">${esc(ex.name)}</div><div class="s"><span class="accent" style="font-weight:600">${r.sets} × ${r.reps}</span> · ${esc(ex.muscle)}</div></button>
+      <button class="grow" style="text-align:left" data-act="editTarget" data-i="${i}"><div class="t">${esc(ex.name)}</div><div class="s"><span class="accent" style="font-weight:500">${r.sets} × ${r.reps}</span> · ${esc(ex.muscle)}</div></button>
       <button class="tiny-btn" data-act="mv" data-i="${i}" data-d="-1" ${i === 0 ? 'disabled' : ''} aria-label="Subir">${ui('up')}</button>
       <button class="tiny-btn" data-act="mv" data-i="${i}" data-d="1" ${i === d.ex.length - 1 ? 'disabled' : ''} aria-label="Bajar">${ui('down')}</button>
       <button class="tiny-btn danger" data-act="rmRoutine" data-i="${i}" aria-label="Quitar">${ui('x')}</button></div>`;
@@ -408,7 +408,7 @@ function viewRoutines() {
     <div class="chips">${DAY_ORDER.map((key) => `<button class="chip ${k === key ? 'on' : ''}" data-act="routineDay" data-v="${key}">${exIcon(S.days[key].icon)}${esc(S.days[key].name)}</button>`).join('')}</div>
     <div class="card" style="margin-top:14px;display:flex;align-items:center;gap:14px">
       <div class="ex-ico acc" style="width:56px;height:56px;border-radius:16px">${exIcon(d.icon)}</div>
-      <div style="flex:1;min-width:0"><div style="font-family:var(--display);font-size:28px;font-weight:700;text-transform:uppercase;line-height:1">${esc(d.name)}</div><div class="muted" style="font-size:13px;margin-top:4px">${esc(d.desc || '')}</div></div>
+      <div style="flex:1;min-width:0"><div style="font-family:var(--display);font-size:26px;font-weight:300;letter-spacing:-0.03em;line-height:1">${esc(d.name)}</div><div class="muted" style="font-size:13px;margin-top:4px">${esc(d.desc || '')}</div></div>
       <button class="tiny-btn" data-act="editDay" aria-label="Editar día">${ui('edit')}</button>
     </div>
     <div class="section-title">Ejercicios · ${d.ex.length} <button data-act="addRoutine">+ Añadir</button></div>
@@ -521,7 +521,7 @@ function openWorkout(id) {
   const w = S.workouts.find((x) => x.id === id); if (!w) return;
   const html = `<p class="muted" style="margin:-4px 0 8px">${cap(fmtDate(w.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))}</p>
     <div class="kv" style="margin-bottom:6px"><div><b>${fmtNum(wVolume(w), 0)}</b><span>Volumen kg</span></div><div><b>${w.ex.reduce((a, e) => a + e.sets.length, 0)}</b><span>Series</span></div></div>
-    ${w.ex.map((e) => { const ex = exById(e.exId); const st = exStats(e); return `<div class="detail-ex"><div class="h">${exIcon(ex.icon)}<span style="flex:1">${esc(ex.name)}</span><span class="muted" style="font-size:12.5px">1RM ~${fmtKg(st.e1rm)}</span></div>${e.ch ? `<div class="s accent" style="font-size:12.5px;margin:-4px 0 8px;font-weight:600">${ui('flame', 'inl')} Reto ${e.ch.bw ? `${e.ch.r}+ reps` : `${fmtKg(e.ch.w)} kg × ${e.ch.r}+`} · ${e.sets.filter((s) => beatChallenge(s, e.ch)).length}/${e.sets.length} series superadas</div>` : ''}<div class="sets" style="margin:0">${e.sets.map((s, j) => `<span class="set-chip ${e.ch ? (beatChallenge(s, e.ch) ? 'win' : 'miss') : ''}"><i>${j + 1}</i>${fmtKg(s.w)} kg × ${s.r}</span>`).join('')}</div></div>`; }).join('')}
+    ${w.ex.map((e) => { const ex = exById(e.exId); const st = exStats(e); return `<div class="detail-ex"><div class="h">${exIcon(ex.icon)}<span style="flex:1">${esc(ex.name)}</span><span class="muted" style="font-size:12.5px">1RM ~${fmtKg(st.e1rm)}</span></div>${e.ch ? `<div class="s accent" style="font-size:12.5px;margin:-4px 0 8px;font-weight:500">${ui('flame', 'inl')} Reto ${e.ch.bw ? `${e.ch.r}+ reps` : `${fmtKg(e.ch.w)} kg × ${e.ch.r}+`} · ${e.sets.filter((s) => beatChallenge(s, e.ch)).length}/${e.sets.length} series superadas</div>` : ''}<div class="sets" style="margin:0">${e.sets.map((s, j) => `<span class="set-chip ${e.ch ? (beatChallenge(s, e.ch) ? 'win' : 'miss') : ''}"><i>${j + 1}</i>${fmtKg(s.w)} kg × ${s.r}</span>`).join('')}</div></div>`; }).join('')}
     <div class="btn-row" style="margin-top:16px"><button class="btn danger" id="wd-del">${ui('trash')}Eliminar</button><button class="btn" id="wd-edit">${ui('edit')}Editar</button></div>`;
   const sh = openSheet(esc(S.days[w.day]?.name || 'Libre'), html);
   $('#wd-del', sh).addEventListener('click', () => confirmSheet('Eliminar entreno', 'Se borrará este entreno y sus series. No se puede deshacer.', 'Eliminar', () => { S.workouts = S.workouts.filter((x) => x.id !== id); save(); render(); toast('Entreno eliminado'); }));
@@ -552,7 +552,7 @@ function openModeSheet(k) {
   const preview = info.list.map((x) => {
     const ex = exById(x.exId);
     const right = x.ch
-      ? (x.ch.bw ? `<div class="val accent">${x.ch.r}<span class="muted" style="font-size:12px"> reps+</span></div>` : `<div class="val"><span class="muted" style="font-size:12px;font-weight:600">${fmtKg(x.ch.from.w)}×${x.ch.from.r} →</span> <span class="accent">${fmtKg(x.ch.w)}</span><span class="muted" style="font-size:12px">×${x.ch.r}+</span></div>`)
+      ? (x.ch.bw ? `<div class="val accent">${x.ch.r}<span class="muted" style="font-size:12px"> reps+</span></div>` : `<div class="val"><span class="muted" style="font-size:12px;font-weight:500">${fmtKg(x.ch.from.w)}×${x.ch.from.r} →</span> <span class="accent">${fmtKg(x.ch.w)}</span><span class="muted" style="font-size:12px">×${x.ch.r}+</span></div>`)
       : `<span class="muted" style="font-size:12px;white-space:nowrap">${x.n}/${CH_MIN_SESSIONS} sesiones</span>`;
     return `<div class="row ${x.ch ? '' : 'dim'}"><div class="ex-ico">${exIcon(ex.icon)}</div><div class="grow"><div class="t">${esc(ex.name)}</div><div class="s">${x.ch ? (x.ch.bw ? 'Peso corporal · bate tu récord de reps' : `1RM est. ${fmtKg(x.ch.base)} kg`) : 'Sin datos suficientes · modo normal'}</div></div>${right}</div>`;
   }).join('');

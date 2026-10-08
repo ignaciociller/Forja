@@ -43,7 +43,7 @@ icons/                 Icono de la app (SVG + PNG)
 .nojekyll              Hace que GitHub Pages sirva los archivos tal cual
 ```
 
-Sin frameworks ni dependencias: HTML, CSS y JavaScript puro. La tipografía (Barlow / Barlow Condensed) se carga desde Google Fonts.
+Sin frameworks ni dependencias: HTML, CSS y JavaScript puro. La tipografía (Outfit para títulos y números, Inter para el texto) se carga desde Google Fonts.
 
 ## Sobre los datos
 
@@ -51,4 +51,4 @@ Todo se guarda en el `localStorage` del navegador, solo en ese dispositivo. Si b
 
 ## Actualizar la app
 
-Cuando cambies archivos, sube la versión en `sw.js` (por ejemplo, de `forja-v2` a `const CACHE = 'forja-v3'`) para que los móviles que ya la tienen instalada descarguen la versión nueva.
+Cuando cambies archivos, sube la versión en `sw.js` (por ejemplo, de `forja-v3` a `const CACHE = 'forja-v4'`) para que los móviles que ya la tienen instalada descarguen la versión nueva.
