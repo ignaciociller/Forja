@@ -1,22 +1,24 @@
-/* FORJA — service worker: funciona sin conexión */
-const CACHE = 'forja-v3';
-const SHELL = ['./', 'index.html', 'css/styles.css', 'js/data.js', 'js/app.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'];
+/* FORJA — service worker: instalación y uso sin conexión */
+const CACHE = 'forja-v4';
+const SHELL = ['./', 'index.html', 'css/styles.css', 'js/data.js', 'js/app.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-192.png', 'icons/maskable-512.png', 'icons/icon.svg', 'icons/screen-1.png', 'icons/screen-2.png', 'icons/screen-3.png'];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // Cada archivo por separado: si uno falla, el resto se guarda igual y la app sigue siendo instalable
+  e.waitUntil(caches.open(CACHE).then((c) => Promise.allSettled(SHELL.map((u) => c.add(u)))).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', (e) => {
   e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
 });
-// Red primero (para recibir actualizaciones), caché si no hay conexión
+// Red primero (para recibir actualizaciones); caché si no hay conexión
 self.addEventListener('fetch', (e) => {
-  if (e.request.method !== 'GET') return;
+  const req = e.request;
+  if (req.method !== 'GET' || !req.url.startsWith('http')) return;
   e.respondWith(
-    fetch(e.request).then((res) => {
-      if (res.ok && (e.request.url.startsWith(self.location.origin) || e.request.url.includes('fonts.g'))) {
-        const copy = res.clone(); caches.open(CACHE).then((c) => c.put(e.request, copy));
+    fetch(req).then((res) => {
+      if (res.ok && (req.url.startsWith(self.location.origin) || req.url.includes('fonts.g'))) {
+        const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy));
       }
       return res;
-    }).catch(() => caches.match(e.request, { ignoreSearch: true }).then((r) => r || caches.match('index.html')))
+    }).catch(() => caches.match(req, { ignoreSearch: true }).then((r) => r || (req.mode === 'navigate' ? caches.match('index.html') : Response.error())))
   );
 });

@@ -1,18 +1,32 @@
 {
+  "id": "./",
   "name": "FORJA · Gym Tracker",
   "short_name": "Forja",
   "description": "Registro minimalista de entrenos de gimnasio: series, pesos y progresión.",
   "lang": "es",
-  "start_url": "./",
+  "dir": "ltr",
+  "start_url": "./?source=pwa",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait",
   "background_color": "#121315",
   "theme_color": "#121315",
+  "categories": ["health", "fitness", "sports"],
+  "prefer_related_applications": false,
   "icons": [
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
-    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "screenshots": [
+    { "src": "icons/screen-1.png", "sizes": "780x1688", "type": "image/png", "form_factor": "narrow", "label": "Progreso" },
+    { "src": "icons/screen-2.png", "sizes": "780x1688", "type": "image/png", "form_factor": "narrow", "label": "Entreno" },
+    { "src": "icons/screen-3.png", "sizes": "780x1688", "type": "image/png", "form_factor": "narrow", "label": "Modo Reto" }
+  ],
+  "shortcuts": [
+    { "name": "Nuevo entreno", "short_name": "Entrenar", "url": "./?tab=log", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Progreso", "url": "./?tab=progress", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
   ]
 }

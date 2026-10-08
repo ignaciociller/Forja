@@ -32,17 +32,29 @@ function defaults() {
     prs: [],
     prefs: { inc: 2.5, maxW: 200 },
     days: JSON.parse(JSON.stringify(DEFAULT_DAYS)),
+    dayOrder: [...DAY_ORDER],
     library: DEFAULT_LIBRARY.map((e) => ({ ...e })),
     workouts: [],
     draft: null,
   };
 }
+function normalizeDays(d) {
+  if (!d.days || typeof d.days !== 'object') d.days = {};
+  const keys = Object.keys(d.days);
+  const order = Array.isArray(d.dayOrder) ? d.dayOrder.filter((k) => d.days[k]) : [];
+  keys.forEach((k) => { if (!order.includes(k)) order.push(k); });
+  d.dayOrder = order;
+  return d;
+}
+const dayName = (w) => S.days[w.day]?.name || w.dayName || 'Libre';
+const dayIcon = (w) => S.days[w.day]?.icon || w.dayIcon || 'dumbbell';
 function load() {
   try {
     const raw = localStorage.getItem(STORE_KEY);
     if (!raw) return defaults();
     const d = Object.assign(defaults(), JSON.parse(raw));
     d.prefs = Object.assign(defaults().prefs, d.prefs);
+    normalizeDays(d);
     d.profile = Object.assign(defaults().profile, d.profile);
     return d;
   } catch (e) { return defaults(); }
@@ -61,7 +73,7 @@ const exById = (id) => S.library.find((e) => e.id === id) || { id, name: 'Ejerci
 
 /* UI state (no persistido salvo pestaña) */
 const U = { tab: 'log', filter: 'all', chartEx: null, metric: 'max', routineDay: 'push', bodyMetric: 'weight' };
-try { U.tab = sessionStorage.getItem('forja.tab') || (S.draft ? 'log' : S.workouts.length ? 'progress' : 'log'); } catch (e) {}
+try { const qt = new URLSearchParams(location.search).get('tab'); U.tab = (['log', 'progress', 'routines'].includes(qt) && qt) || sessionStorage.getItem('forja.tab') || (S.draft ? 'log' : S.workouts.length ? 'progress' : 'log'); } catch (e) {}
 
 /* ================= Métricas ================= */
 const e1rm = (w, r) => (r <= 1 ? w : w * (1 + r / 30));
@@ -165,7 +177,7 @@ function viewProgress() {
   const exIds = Object.keys(exCount).sort((a, b) => exCount[b] - exCount[a]);
   if (!exIds.includes(U.chartEx)) U.chartEx = exIds[0] || null;
 
-  const filterChips = `<div class="chips">${[['all', 'Todo'], ...DAY_ORDER.map((k) => [k, S.days[k].name])].map(([k, n]) => `<button class="chip ${U.filter === k ? 'on' : ''}" data-act="filter" data-v="${k}">${n}</button>`).join('')}</div>`;
+  const filterChips = `<div class="chips">${[['all', 'Todo'], ...S.dayOrder.map((k) => [k, S.days[k].name])].map(([k, n]) => `<button class="chip ${U.filter === k ? 'on' : ''}" data-act="filter" data-v="${k}">${n}</button>`).join('')}</div>`;
 
   let exCard = '';
   if (U.chartEx) {
@@ -195,15 +207,16 @@ function viewProgress() {
       </div>`;
   }
 
-  const volPts = fw.slice(-14).map((w) => ({ date: w.date, y: wVolume(w), note: S.days[w.day]?.name || 'Libre' }));
+  const volPts = fw.slice(-14).map((w) => ({ date: w.date, y: wVolume(w), note: dayName(w) }));
   const volCard = volPts.length ? `<div class="section-title">Volumen por sesión</div><div class="card">${barChart(volPts, { id: 'vol' })}</div>` : '';
 
   const hist = [...fw].reverse().slice(0, U.histAll ? 500 : 8).map((w) => {
     const sets = w.ex.reduce((a, e) => a + e.sets.length, 0);
-    return `<button class="row" data-act="workout" data-id="${w.id}"><div class="ex-ico acc">${exIcon(S.days[w.day]?.icon || 'dumbbell')}</div><div class="grow"><div class="t">${esc(S.days[w.day]?.name || 'Libre')}${w.challenge ? ` <span class="reto-tag">${ui('flame', 'inl')}Reto</span>` : ''} <span class="muted" style="font-weight:500;text-transform:capitalize">· ${fmtDate(w.date)}</span></div><div class="s">${w.ex.length} ejercicio${w.ex.length === 1 ? '' : 's'} · ${sets} serie${sets === 1 ? '' : 's'}${w.end && w.start ? ' · ' + Math.round((w.end - w.start) / 60000) + ' min' : ''}</div></div><div class="val">${fmtNum(wVolume(w) / 1000, 1)}<span class="muted" style="font-size:13px">t</span></div></button>`;
+    return `<button class="row" data-act="workout" data-id="${w.id}"><div class="ex-ico acc">${exIcon(dayIcon(w))}</div><div class="grow"><div class="t">${esc(dayName(w))}${w.challenge ? ` <span class="reto-tag">${ui('flame', 'inl')}Reto</span>` : ''} <span class="muted" style="font-weight:500;text-transform:capitalize">· ${fmtDate(w.date)}</span></div><div class="s">${w.ex.length} ejercicio${w.ex.length === 1 ? '' : 's'} · ${sets} serie${sets === 1 ? '' : 's'}${w.end && w.start ? ' · ' + Math.round((w.end - w.start) / 60000) + ' min' : ''}</div></div><div class="val">${fmtNum(wVolume(w) / 1000, 1)}<span class="muted" style="font-size:13px">t</span></div></button>`;
   }).join('');
 
   return `
+    ${installBannerHTML()}
     <div class="stats">
       <div class="stat hot"><b>${last30}</b><span>Últ. 30 días</span></div>
       <div class="stat"><b>${fmtNum(weekVol / 1000, 1)}<em>t</em></b><span>Volumen 7d</span></div>
@@ -241,7 +254,7 @@ function viewLog() {
   if (!S.draft) {
     const lastByDay = {};
     S.workouts.forEach((w) => { if (!lastByDay[w.day] || lastByDay[w.day] < w.date) lastByDay[w.day] = w.date; });
-    const cards = DAY_ORDER.map((k, i) => {
+    const cards = S.dayOrder.map((k, i) => {
       const d = S.days[k];
       return `<button class="day-card" data-act="startDay" data-day="${k}">${lastByDay[k] ? `<span class="last">${agoText(lastByDay[k])}</span>` : ''}${exIcon(d.icon)}<div><h4>${esc(d.name)}</h4><p>${d.ex.length} ejercicios · ${esc(d.desc || '')}</p></div></button>`;
     }).join('');
@@ -261,7 +274,7 @@ function viewLog() {
   const ring = `<svg class="progress-ring" viewBox="0 0 54 54"><circle cx="27" cy="27" r="22" fill="none" stroke="#2a2e33" stroke-width="3"/><circle cx="27" cy="27" r="22" fill="none" stroke="#ff5722" stroke-width="3" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - pct)}" transform="rotate(-90 27 27)"/><text x="27" y="32" text-anchor="middle">${Math.round(pct * 100)}%</text></svg>`;
   return `
     <div class="session-head">
-      <div><span class="day-badge">${D.editing ? 'Edición' : 'En curso'}</span>${D.challenge ? ` <span class="day-badge reto">${ui('flame', 'inl')} Reto</span>` : ''}<h2 style="margin-top:8px">${esc(day ? day.name : 'Libre')}</h2>
+      <div><span class="day-badge">${D.editing ? 'Edición' : 'En curso'}</span>${D.challenge ? ` <span class="day-badge reto">${ui('flame', 'inl')} Reto</span>` : ''}<h2 style="margin-top:8px">${esc(day ? day.name : D.dayName || 'Libre')}</h2>
         <div class="session-meta"><button data-act="editDate">${ui('calendar')}${fmtDate(D.date)}</button>${D.editing ? `<span>${ui('edit')}Editando</span>` : `<span>${ui('clock')}<span id="timer">0:00</span></span>`}</div></div>
       ${ring}
     </div>
@@ -394,8 +407,10 @@ function stopTimer() { clearInterval(timerI); }
 
 /* ================= Vista: Rutinas ================= */
 function viewRoutines() {
+  if (!S.days[U.routineDay]) U.routineDay = S.dayOrder[0];
   const k = U.routineDay;
   const d = S.days[k];
+  if (!d) return `<div class="empty">${ui('list')}<h3>Sin días de rutina</h3><p>Crea tu primer día (Push, Full body, Pierna…) y añade sus ejercicios.</p><button class="btn primary" data-act="newDay">${ui('plus')}Nuevo día</button></div>`;
   const rows = d.ex.map((r, i) => {
     const ex = exById(r.exId);
     return `<div class="row"><div class="ex-ico">${exIcon(ex.icon)}</div>
@@ -405,7 +420,7 @@ function viewRoutines() {
       <button class="tiny-btn danger" data-act="rmRoutine" data-i="${i}" aria-label="Quitar">${ui('x')}</button></div>`;
   }).join('');
   return `
-    <div class="chips">${DAY_ORDER.map((key) => `<button class="chip ${k === key ? 'on' : ''}" data-act="routineDay" data-v="${key}">${exIcon(S.days[key].icon)}${esc(S.days[key].name)}</button>`).join('')}</div>
+    <div class="chips">${S.dayOrder.map((key) => `<button class="chip ${k === key ? 'on' : ''}" data-act="routineDay" data-v="${key}">${exIcon(S.days[key].icon)}${esc(S.days[key].name)}</button>`).join('')}<button class="chip add" data-act="newDay">${ui('plus')}Nuevo día</button></div>
     <div class="card" style="margin-top:14px;display:flex;align-items:center;gap:14px">
       <div class="ex-ico acc" style="width:56px;height:56px;border-radius:16px">${exIcon(d.icon)}</div>
       <div style="flex:1;min-width:0"><div style="font-family:var(--display);font-size:26px;font-weight:300;letter-spacing:-0.03em;line-height:1">${esc(d.name)}</div><div class="muted" style="font-size:13px;margin-top:4px">${esc(d.desc || '')}</div></div>
@@ -500,6 +515,55 @@ function openExerciseEditor(id, after) {
   });
 }
 
+/* Crear / editar / eliminar días de rutina */
+function openDayEditor(key) {
+  const isNew = !key;
+  const d = isNew ? { name: '', desc: '', icon: 'dumbbell', ex: [] } : S.days[key];
+  let icon = d.icon;
+  const idx = isNew ? -1 : S.dayOrder.indexOf(key);
+  const others = S.dayOrder.filter((k) => k !== key);
+  const sh = openSheet(isNew ? 'Nuevo día' : 'Editar día', `
+    <div class="fields">
+      <label class="field full text"><span>Nombre</span><input id="ed-n" value="${esc(d.name)}" placeholder="Ej. Full body, Brazo, Pierna B" autocomplete="off" maxlength="24"></label>
+      <label class="field full text"><span>Descripción</span><input id="ed-d" value="${esc(d.desc || '')}" placeholder="Ej. Pecho · Espalda" autocomplete="off" maxlength="40"></label>
+      ${isNew && others.length ? `<label class="field full text"><span>Copiar ejercicios de</span><select id="ed-copy"><option value="">Empezar vacío</option>${others.map((k) => `<option value="${k}">${esc(S.days[k].name)}</option>`).join('')}</select></label>` : ''}
+    </div>
+    <div class="section-title">Icono</div>
+    <div class="icon-grid" id="ed-ic">${ICON_LIST.map((n) => `<button data-ic="${n}" class="${n === icon ? 'on' : ''}">${exIcon(n)}</button>`).join('')}</div>
+    ${!isNew && S.dayOrder.length > 1 ? `<div class="section-title">Posición</div><div class="btn-row"><button class="btn sm" id="ed-l" ${idx === 0 ? 'disabled' : ''}>${ui('back')}Antes</button><button class="btn sm" id="ed-r" ${idx === S.dayOrder.length - 1 ? 'disabled' : ''}>Después${ui('chev')}</button></div>` : ''}
+    <button class="btn primary" style="margin-top:16px" id="ed-ok">${ui('check')}${isNew ? 'Crear día' : 'Guardar'}</button>
+    ${isNew ? '' : `<button class="btn danger sm" style="margin-top:8px" id="ed-del">${ui('trash')}Eliminar día</button>`}`);
+  $('#ed-ic', sh).addEventListener('click', (ev) => { const b = ev.target.closest('[data-ic]'); if (!b) return; icon = b.dataset.ic; sh.querySelectorAll('[data-ic]').forEach((x) => x.classList.toggle('on', x === b)); });
+  const move = (dir) => { const i = S.dayOrder.indexOf(key), j = i + dir; if (j < 0 || j >= S.dayOrder.length) return; [S.dayOrder[i], S.dayOrder[j]] = [S.dayOrder[j], S.dayOrder[i]]; save(); render(); openDayEditor(key); };
+  $('#ed-l', sh)?.addEventListener('click', () => move(-1));
+  $('#ed-r', sh)?.addEventListener('click', () => move(1));
+  $('#ed-ok', sh).addEventListener('click', () => {
+    const name = $('#ed-n', sh).value.trim();
+    if (!name) { toast('Ponle un nombre al día'); return; }
+    if (isNew) {
+      const k = 'd_' + uid();
+      const copy = $('#ed-copy', sh)?.value;
+      S.days[k] = { name, desc: $('#ed-d', sh).value.trim(), icon, ex: copy ? JSON.parse(JSON.stringify(S.days[copy].ex)) : [] };
+      S.dayOrder.push(k); U.routineDay = k;
+      save(); closeSheet(); U.tab = 'routines'; render(); window.scrollTo(0, 0); toast(`Día "${name}" creado`, 'check');
+    } else {
+      d.name = name; d.desc = $('#ed-d', sh).value.trim(); d.icon = icon; save(); closeSheet(); render();
+    }
+  });
+  $('#ed-del', sh)?.addEventListener('click', () => {
+    const n = S.workouts.filter((w) => w.day === key).length;
+    confirmSheet('Eliminar día', `Se eliminará <b>${esc(d.name)}</b> de tus rutinas.${n ? ` Tus ${n} entrenos de este día se conservan en el historial y en las gráficas.` : ''}`, 'Eliminar', () => {
+      S.workouts.forEach((w) => { if (w.day === key) { w.dayName = d.name; w.dayIcon = d.icon; } });
+      if (S.draft && S.draft.day === key) { S.draft.dayName = d.name; S.draft.dayIcon = d.icon; }
+      delete S.days[key];
+      S.dayOrder = S.dayOrder.filter((k) => k !== key);
+      if (U.filter === key) U.filter = 'all';
+      U.routineDay = S.dayOrder[Math.max(0, idx - 1)];
+      save(); render(); toast('Día eliminado');
+    });
+  });
+}
+
 /* Confirmación sin diálogos del navegador */
 function confirmSheet(title, text, okLabel, onOk, danger = true) {
   const sh = openSheet(title, `<p class="muted" style="margin:0 0 18px">${text}</p><div class="btn-row"><button class="btn" data-act="closeSheet">Cancelar</button><button class="btn ${danger ? 'danger' : 'primary'}" id="cf-ok">${okLabel}</button></div>`);
@@ -523,7 +587,7 @@ function openWorkout(id) {
     <div class="kv" style="margin-bottom:6px"><div><b>${fmtNum(wVolume(w), 0)}</b><span>Volumen kg</span></div><div><b>${w.ex.reduce((a, e) => a + e.sets.length, 0)}</b><span>Series</span></div></div>
     ${w.ex.map((e) => { const ex = exById(e.exId); const st = exStats(e); return `<div class="detail-ex"><div class="h">${exIcon(ex.icon)}<span style="flex:1">${esc(ex.name)}</span><span class="muted" style="font-size:12.5px">1RM ~${fmtKg(st.e1rm)}</span></div>${e.ch ? `<div class="s accent" style="font-size:12.5px;margin:-4px 0 8px;font-weight:500">${ui('flame', 'inl')} Reto ${e.ch.bw ? `${e.ch.r}+ reps` : `${fmtKg(e.ch.w)} kg × ${e.ch.r}+`} · ${e.sets.filter((s) => beatChallenge(s, e.ch)).length}/${e.sets.length} series superadas</div>` : ''}<div class="sets" style="margin:0">${e.sets.map((s, j) => `<span class="set-chip ${e.ch ? (beatChallenge(s, e.ch) ? 'win' : 'miss') : ''}"><i>${j + 1}</i>${fmtKg(s.w)} kg × ${s.r}</span>`).join('')}</div></div>`; }).join('')}
     <div class="btn-row" style="margin-top:16px"><button class="btn danger" id="wd-del">${ui('trash')}Eliminar</button><button class="btn" id="wd-edit">${ui('edit')}Editar</button></div>`;
-  const sh = openSheet(esc(S.days[w.day]?.name || 'Libre'), html);
+  const sh = openSheet(esc(dayName(w)), html);
   $('#wd-del', sh).addEventListener('click', () => confirmSheet('Eliminar entreno', 'Se borrará este entreno y sus series. No se puede deshacer.', 'Eliminar', () => { S.workouts = S.workouts.filter((x) => x.id !== id); save(); render(); toast('Entreno eliminado'); }));
   $('#wd-edit', sh).addEventListener('click', () => {
     if (S.draft) { closeSheet(); toast('Termina o descarta el entreno en curso primero'); return; }
@@ -536,7 +600,7 @@ function openWorkout(id) {
 /* ================= Elegir modo (Normal / Reto) ================= */
 function beginSession(k, challenge) {
   const d = S.days[k];
-  S.draft = { day: k, date: todayISO(), start: Date.now(), open: 0, challenge: !!challenge, ex: [] };
+  S.draft = { day: k, dayName: d ? d.name : 'Libre', dayIcon: d ? d.icon : 'dumbbell', date: todayISO(), start: Date.now(), open: 0, challenge: !!challenge, ex: [] };
   if (d) S.draft.ex = d.ex.map((r) => {
     const e = newDraftEx(r.exId, r.sets, r.reps);
     if (challenge) { const ch = challengeFor(r.exId, r.reps); if (ch) { e.ch = ch; e.ed = { w: ch.w, r: ch.r }; } }
@@ -627,6 +691,9 @@ function renderSettings() {
     ${Object.entries(autoPR).map(([id, p]) => { const ex = exById(id); return `<div class="row"><div class="ex-ico">${exIcon(ex.icon)}</div><div class="grow"><div class="t">${esc(ex.name)}</div><div class="s">Registrado · ${fmtShort(p.date)}</div></div><div class="val">${fmtKg(p.w)}<span class="muted" style="font-size:13px"> ×${p.r}</span></div></div>`; }).join('')}
     ${!manual.length && !Object.keys(autoPR).length ? '<p class="muted">Añade tus marcas personales o se detectarán solas al entrenar.</p>' : ''}
 
+    <div class="section-title">App</div>
+    ${installSettingsHTML()}
+
     <div class="section-title">Preferencias</div>
     <div class="fields">
       <label class="field text"><span>Incremento de peso</span><select data-pref="inc">${[0.5, 1, 1.25, 2.5, 5].map((v) => `<option value="${v}" ${S.prefs.inc === v ? 'selected' : ''}>${fmtKg(v)} kg</option>`).join('')}</select></label>
@@ -703,7 +770,7 @@ const A = {
     const ex = D.ex.filter((e) => e.sets.length).map((e) => ({ exId: e.exId, sets: e.sets.map((s) => ({ w: s.w, r: s.r })), ...(e.ch ? { ch: { w: e.ch.w, r: e.ch.r, bw: !!e.ch.bw } } : {}) }));
     if (!ex.length) { toast('Registra al menos una serie'); return; }
     const prs = ex.filter((e) => { const b = bestFor(e.exId, D.editing); return Math.max(...e.sets.map((s) => s.w)) > b.w && b.w > 0; }).length;
-    const w = { id: D.editing || uid(), date: D.date, day: D.day, start: D.start, end: D.editing ? (S.workouts.find((x) => x.id === D.editing)?.end || Date.now()) : Date.now(), ex, ...(D.challenge ? { challenge: true } : {}) };
+    const w = { id: D.editing || uid(), date: D.date, day: D.day, dayName: S.days[D.day]?.name || D.dayName || 'Libre', dayIcon: S.days[D.day]?.icon || D.dayIcon || 'dumbbell', start: D.start, end: D.editing ? (S.workouts.find((x) => x.id === D.editing)?.end || Date.now()) : Date.now(), ex, ...(D.challenge ? { challenge: true } : {}) };
     const chEx = ex.filter((e) => e.ch), chWon = chEx.filter((e) => e.sets.some((s) => beatChallenge(s, e.ch))).length;
     if (D.editing) S.workouts = S.workouts.map((x) => (x.id === D.editing ? w : x)); else S.workouts.push(w);
     S.draft = null; save(true);
@@ -724,12 +791,8 @@ const A = {
     $('#tg-ok', sh).addEventListener('click', () => { r.sets = clamp(parseInt($('#tg-s', sh).value) || 1, 1, 20); r.reps = clamp(parseInt($('#tg-r', sh).value) || 1, 1, 100); save(); closeSheet(); render(); });
     $('#tg-ex', sh).addEventListener('click', () => openExerciseEditor(r.exId));
   },
-  editDay() {
-    const d = S.days[U.routineDay]; let icon = d.icon;
-    const sh = openSheet('Editar día', `<div class="fields"><label class="field full text"><span>Nombre</span><input id="ed-n" value="${esc(d.name)}"></label><label class="field full text"><span>Descripción</span><input id="ed-d" value="${esc(d.desc || '')}"></label></div><div class="section-title">Icono</div><div class="icon-grid" id="ed-ic">${ICON_LIST.map((n) => `<button data-ic="${n}" class="${n === icon ? 'on' : ''}">${exIcon(n)}</button>`).join('')}</div><button class="btn primary" style="margin-top:16px" id="ed-ok">${ui('check')}Guardar</button>`);
-    $('#ed-ic', sh).addEventListener('click', (ev) => { const b = ev.target.closest('[data-ic]'); if (!b) return; icon = b.dataset.ic; sh.querySelectorAll('[data-ic]').forEach((x) => x.classList.toggle('on', x === b)); });
-    $('#ed-ok', sh).addEventListener('click', () => { d.name = $('#ed-n', sh).value.trim() || d.name; d.desc = $('#ed-d', sh).value.trim(); d.icon = icon; save(); closeSheet(); render(); });
-  },
+  editDay() { openDayEditor(U.routineDay); },
+  newDay() { openDayEditor(null); },
   library() { openPicker('Biblioteca', (id) => openExerciseEditor(id, () => {}), 'manage'); },
   newEx() { const cb = pickerCb, mode = pickerMode; openExerciseEditor(null, (id) => { if (cb && mode === 'pick') cb(id); }); },
   pkMuscle(el) { pkMuscle = el.dataset.v; $('#pk-m').querySelectorAll('.chip').forEach((c) => c.classList.toggle('on', c === el)); renderPickerList(); },
@@ -771,6 +834,8 @@ const A = {
     };
     bind(sh);
   },
+  install() { doInstall(); },
+  hideInstall() { try { localStorage.setItem('forja.hideInstall', '1'); } catch (e) {} render(); },
   rmPR(el) { S.prs = S.prs.filter((p) => p.id !== el.dataset.id); save(); renderSettings(); },
   export() {
     const blob = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' });
@@ -780,7 +845,7 @@ const A = {
   },
   import() {
     const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'application/json,.json';
-    inp.onchange = () => { const f = inp.files[0]; if (!f) return; f.text().then((t) => { try { const d = JSON.parse(t); if (!d || !Array.isArray(d.workouts)) throw 0; confirmSheet('Importar copia', `Se reemplazarán tus datos actuales por los del archivo (${d.workouts.length} entrenos).`, 'Importar', () => { S = Object.assign(defaults(), d); save(true); renderSettings(); render(); toast('Datos importados', 'check'); }, false); } catch (e) { toast('Archivo no válido'); } }); };
+    inp.onchange = () => { const f = inp.files[0]; if (!f) return; f.text().then((t) => { try { const d = JSON.parse(t); if (!d || !Array.isArray(d.workouts)) throw 0; confirmSheet('Importar copia', `Se reemplazarán tus datos actuales por los del archivo (${d.workouts.length} entrenos).`, 'Importar', () => { S = normalizeDays(Object.assign(defaults(), d)); save(true); renderSettings(); render(); toast('Datos importados', 'check'); }, false); } catch (e) { toast('Archivo no válido'); } }); };
     inp.click();
   },
   reset() { confirmSheet('Borrar todo', 'Se eliminarán entrenos, medidas, PRs y rutinas personalizadas de este dispositivo.', 'Borrar todo', () => { S = defaults(); save(true); renderSettings(); render(); toast('Datos borrados'); }); },
@@ -842,8 +907,70 @@ function toast(msg, icon) {
   clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 2200);
 }
 
-/* ================= Inicio ================= */
-render();
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+/* ================= Instalación (PWA) ================= */
+let installEvt = null;
+const INST = { sw: null, manifest: null, err: '' };
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || navigator.standalone === true;
+const isSecure = () => location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname);
+const inAppBrowser = () => /; wv\)|FBAN|FBAV|Instagram|Line\/|WhatsApp|GSA\/|Telegram/i.test(navigator.userAgent);
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; render(); renderSettings(); });
+window.addEventListener('appinstalled', () => { installEvt = null; toast('FORJA instalada en tu móvil', 'check'); render(); renderSettings(); });
+async function doInstall() {
+  if (!installEvt) { openInstallHelp(); return; }
+  installEvt.prompt();
+  try { const r = await installEvt.userChoice; if (r.outcome === 'accepted') installEvt = null; } catch (e) {}
+  render(); renderSettings();
 }
+async function checkInstall() {
+  try { const r = await fetch('manifest.webmanifest', { cache: 'no-store' }); INST.manifest = r.ok; } catch (e) { INST.manifest = false; }
+  try { const reg = await navigator.serviceWorker?.getRegistration(); INST.sw = !!(reg && (reg.active || reg.waiting || reg.installing)); } catch (e) { INST.sw = false; }
+}
+function installChecks() {
+  const row = (ok, title, help) => `<li>${ui(ok ? 'check' : 'x', ok ? 'ok' : 'ko')}<div><b>${title}</b>${ok ? '' : `<br>${help}`}</div></li>`;
+  return `<ul class="checks">
+    ${row(isSecure(), 'Conexión segura (https)', 'Ábrela desde la dirección <b>https://…github.io/…</b> de GitHub Pages, no desde un archivo descargado.')}
+    ${row(!inAppBrowser(), 'Navegador Chrome', 'Estás dentro de otra app (WhatsApp, Instagram, GitHub…). Toca ⋮ y elige <b>Abrir en Chrome</b>.')}
+    ${row(INST.manifest !== false, 'Manifiesto de la app', 'No se encuentra <b>manifest.webmanifest</b>. Súbelo a la misma carpeta que index.html.')}
+    ${row(INST.sw !== false, 'Modo sin conexión (service worker)', 'No se pudo activar <b>sw.js</b>. Comprueba que está subido junto a index.html y recarga la página.')}
+  </ul>`;
+}
+function openInstallHelp() {
+  checkInstall().then(() => {
+    openSheet('Instalar FORJA', `
+      <p class="muted" style="margin:0 0 6px">En Chrome para Android:</p>
+      <ol class="muted" style="margin:0 0 4px;padding-left:20px;line-height:1.7">
+        <li>Toca el menú <b style="color:var(--text)">⋮</b> arriba a la derecha.</li>
+        <li>Elige <b style="color:var(--text)">Instalar app</b> o <b style="color:var(--text)">Añadir a pantalla de inicio → Instalar</b>.</li>
+        <li>Abre FORJA desde su icono: se verá a pantalla completa.</li>
+      </ol>
+      <div class="section-title">Comprobación</div>
+      ${installChecks()}
+      <p class="note">Si todo sale en verde y Chrome solo ofrece "Crear acceso directo", recarga la página una vez y espera unos segundos: Chrome activa la instalación tras la primera visita.</p>`);
+  });
+}
+function installSettingsHTML() {
+  if (isStandalone()) return `<div class="install"><div class="ex-ico acc">${ui('check')}</div><div class="grow"><div class="t">App instalada</div><div class="s">Estás usando FORJA como app</div></div></div>`;
+  return `<div class="install"><div class="ex-ico acc">${ui('download')}</div><div class="grow"><div class="t">Instalar en el móvil</div><div class="s">${installEvt ? 'Lista para instalar' : 'Pantalla completa y sin conexión'}</div></div><button class="btn primary" data-act="install">${installEvt ? 'Instalar' : 'Cómo'}</button></div>`;
+}
+function installBannerHTML() {
+  let hide = false; try { hide = localStorage.getItem('forja.hideInstall') === '1'; } catch (e) {}
+  if (isStandalone() || !installEvt || hide) return '';
+  return `<div class="install"><div class="ex-ico acc">${ui('download')}</div><div class="grow"><div class="t">Instala FORJA</div><div class="s">Ábrela como app, a pantalla completa</div></div><button class="btn primary" data-act="install">Instalar</button><button class="tiny-btn" data-act="hideInstall" aria-label="Ocultar">${ui('x')}</button></div>`;
+}
+
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js', { scope: './' }).then(() => { INST.sw = true; }).catch((e) => { INST.sw = false; INST.err = String(e); });
+}
+
+/* ================= Inicio ================= */
+function showFatal(err) {
+  console.error(err);
+  app.innerHTML = `<main style="padding:48px 20px"><div class="empty">${ui('x')}<h3>Algo ha fallado</h3><p>Tus datos siguen guardados. Recarga la página; si se repite, exporta una copia y restablece la app.</p>
+    <div style="display:grid;gap:8px"><button class="btn primary" onclick="location.reload()">Recargar</button><button class="btn" onclick="A.export()">Exportar copia</button><button class="btn danger sm" onclick="if(confirmReset())location.reload()">Restablecer app</button></div>
+    <p class="note" style="margin-top:16px">${esc(String(err && err.message || err))}</p></div></main>`;
+}
+let resetArmed = false;
+function confirmReset() { if (!resetArmed) { resetArmed = true; toast('Pulsa otra vez para borrar los datos'); return false; } try { localStorage.removeItem(STORE_KEY); } catch (e) {} return true; }
+const renderSafe = render;
+render = function () { try { renderSafe(); } catch (e) { showFatal(e); } };
+render();

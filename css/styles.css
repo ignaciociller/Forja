@@ -17,7 +17,7 @@
   --nav-h: 68px;
   --safe-b: env(safe-area-inset-bottom, 0px);
   --safe-t: env(safe-area-inset-top, 0px);
-  --display: 'Outfit', system-ui, -apple-system, sans-serif;
+  --display: 'Inter Tight', 'Inter', system-ui, -apple-system, sans-serif;
   --body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   color-scheme: dark;
 }
@@ -178,7 +178,7 @@ main { padding: 4px 16px calc(var(--nav-h) + var(--safe-b) + 28px); }
 
 /* ---------- Empty ---------- */
 .empty { text-align: center; padding: 40px 20px 30px; }
-.empty .ico { width: 64px; height: 64px; margin: 0 auto 14px; color: var(--surface-3); stroke-width: 1.2; }
+.empty > .ico { width: 64px; height: 64px; margin: 0 auto 14px; color: var(--surface-3); stroke-width: 1.2; }
 .empty h3 { margin: 0 0 6px; font-family: var(--display); font-size: 24px; font-weight: 500;  letter-spacing: .03em; }
 .empty p { margin: 0 auto 20px; color: var(--muted); max-width: 280px; }
 
@@ -546,3 +546,41 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; box-shadow: 0 2
 .tiny-btn.danger { color: var(--faint); }
 .tiny-btn.danger:active { color: var(--accent-2); }
 .tiny-btn .ico { stroke-width: 1.5; }
+
+/* =========================================================
+   v4 · Tipografía sobria: Inter Tight (títulos y cifras) + Inter
+   ========================================================= */
+body { font-feature-settings: 'cv11', 'ss01', 'ss03'; }
+.brand h1, .page .top h1 { font-weight: 600; font-size: 24px; letter-spacing: -0.025em; }
+.sheet-head h3 { font-weight: 600; font-size: 19px; letter-spacing: -0.02em; }
+.hero-title { font-size: 30px; font-weight: 400; letter-spacing: -0.03em; }
+.hero-title span { font-weight: 500; }
+.session-head h2 { font-size: 30px; font-weight: 500; letter-spacing: -0.03em; }
+.day-card h4 { font-size: 19px; font-weight: 500; letter-spacing: -0.02em; }
+.mode-card h4 { font-size: 18px; font-weight: 600; letter-spacing: -0.015em; }
+.empty h3 { font-size: 19px; font-weight: 600; letter-spacing: -0.02em; }
+.stat b { font-size: 28px; font-weight: 400; letter-spacing: -0.035em; }
+.big-num { font-size: 32px; font-weight: 400; letter-spacing: -0.035em; }
+.mini-stats b { font-size: 19px; font-weight: 500; letter-spacing: -0.02em; }
+.kv b { font-size: 21px; font-weight: 400; }
+.val { font-size: 16px; font-weight: 500; }
+.ed-value .num { font-size: 50px; font-weight: 300; letter-spacing: -0.045em; }
+.field input { font-size: 22px; font-weight: 400; letter-spacing: -0.02em; }
+.set-count { font-weight: 500; }
+.progress-ring text { font-weight: 500; }
+.row .t, .ex-top .t { font-weight: 500; letter-spacing: -0.011em; }
+.chip.add { color: var(--muted); border-style: dashed; }
+.chip.add .ico { width: 16px; height: 16px; }
+
+/* Botón de instalar */
+.install { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--surface); margin-bottom: 16px; }
+.install .grow { flex: 1; min-width: 0; }
+.install .t { font-weight: 500; font-size: 14.5px; }
+.install .s { font-size: 12.5px; color: var(--muted); }
+.install .btn { width: auto; height: 36px; padding: 0 14px; font-size: 13.5px; border-radius: 999px; }
+.checks { margin: 10px 0 0; padding: 0; list-style: none; font-size: 13px; }
+.checks li { display: flex; gap: 8px; align-items: flex-start; padding: 6px 0; color: var(--muted); }
+.checks li b { font-weight: 500; color: var(--text); }
+.checks .ok { color: var(--good); }
+.checks .ko { color: var(--accent-2); }
+.checks .ico { width: 16px; height: 16px; margin-top: 2px; }
